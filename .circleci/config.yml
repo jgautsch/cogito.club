@@ -1,0 +1,77 @@
+version: 2
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test
+      # TODO: - push_prod_image
+
+jobs:
+  test:
+    docker:
+      - image: circleci/elixir:1.7.1-node
+        environment:
+          MIX_ENV: test
+      - image: circleci/postgres:9.6
+
+    working_directory: ~/app
+
+    steps:
+      - checkout
+
+      # Cogito SPA first
+      # ----------------------
+      - restore_cache:
+          key: deps-web-{{ .Branch }}-{{ checksum "cogito-web/yarn.lock" }}
+      - run: cd cogito-web && yarn
+      - run: cd cogito-web && yarn test
+      - save_cache:
+          key: deps-web-{{ .Branch }}-{{ checksum "cogito-web/yarn.lock" }}
+          paths:
+            - "cogito-web/node_modules"
+
+      # Now the cogito API
+      # ----------------------
+      - run: mix local.hex --force
+      - run: mix local.rebar --force # Needed as a compile time dependency (first on `mix ecto.create` step)
+
+      - restore_cache:
+          keys:
+            - v1-mix-cache-{{ .Branch }}-{{ checksum "mix.lock" }}
+            - v1-mix-cache-{{ .Branch }}
+            - v1-mix-cache
+      - restore_cache:
+          keys:
+            - v1-build-cache-{{ .Branch }}
+            - v1-build-cache
+
+      - run: mix do deps.get, compile
+      - save_cache:
+          key: v1-mix-cache-{{ .Branch }}-{{ checksum "mix.lock" }}
+          paths: "deps"
+      - save_cache:
+          key: v1-mix-cache-{{ .Branch }}
+          paths: "deps"
+      - save_cache:
+          key: v1-mix-cache
+          paths: "deps"
+      - save_cache:
+          key: v1-build-cache-{{ .Branch }}
+          paths: "_build"
+      - save_cache:
+          key: v1-build-cache
+          paths: "_build"
+
+      - run:
+          name: Wait for DB
+          command: dockerize -wait tcp://localhost:5432 -timeout 1m
+
+      - run: mix test
+
+      - store_test_results:
+          path: _build/test/junit
+
+      # Cache all the project files to re-use in the deploy job (instead of pulling the repo again)
+      - persist_to_workspace:
+          root: .
+          paths: .
