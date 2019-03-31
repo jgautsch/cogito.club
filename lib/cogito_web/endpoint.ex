@@ -1,5 +1,6 @@
 defmodule CogitoWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :cogito
+  use Absinthe.Phoenix.Endpoint
 
   socket "/socket", CogitoWeb.UserSocket,
     websocket: true,

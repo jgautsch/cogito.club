@@ -11,7 +11,8 @@ defmodule Cogito.Application do
       # Start the Ecto repository
       Cogito.Repo,
       # Start the endpoint when the application starts
-      CogitoWeb.Endpoint
+      CogitoWeb.Endpoint,
+      {Absinthe.Subscription, [CogitoWeb.Endpoint]}
       # Starts a worker by calling: Cogito.Worker.start_link(arg)
       # {Cogito.Worker, arg},
     ]

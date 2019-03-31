@@ -1,6 +1,9 @@
 defmodule CogitoWeb.UserSocket do
   use Phoenix.Socket
 
+  use Absinthe.Phoenix.Socket,
+    schema: CogitoWeb.Schema
+
   ## Channels
   # channel "room:*", CogitoWeb.RoomChannel
 
